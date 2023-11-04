@@ -113,11 +113,10 @@ function M.now(pkg, setup)
   M.add_path(pkg)
   local m = require(pkg)
   if setup ~= false then
-    if setup == nil or setup == true then
-      m.setup()
-    else
-      m.setup(setup)
+    if setup == true then
+      setup = nil
     end
+    m.setup(setup)
   end
   return m
 end
