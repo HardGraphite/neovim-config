@@ -14,6 +14,14 @@ local function keymap_set_keys(mode, key_prefix, keys_and_funcs, opts)
   end
 end
 
+local function add_to_rtp(path, stdpath_base_dir)
+  if stdpath_base_dir then
+    path = vim.fn.stdpath(stdpath_base_dir) .. '/' .. path
+  end
+  vim.opt.rtp:append(path)
+  return path
+end
+
 -------------------------------------------------
 ---------------| Theme and color |---------------
 -------------------------------------------------
@@ -132,3 +140,14 @@ keymap_set_keys("n", "<leader>" .. "f", {
 })
 mod = nil
 
+-------------------------------------------------
+------------| Programming support |--------------
+-------------------------------------------------
+
+--- tree-sitter ---
+usepkg.now("nvim-treesitter", false)
+require("nvim-treesitter.configs").setup{
+  parser_install_dir = add_to_rtp("treesitter_parsers", "data"),
+  highlight = { enable = true },
+  --incremental_selection = { enable = true },
+}
