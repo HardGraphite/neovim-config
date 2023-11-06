@@ -52,6 +52,9 @@ usepkg.now("lualine", {
   }
 })
 
+--- startup screen ---
+vim_o.shortmess = vim_o.shortmess .. "I" -- disable the intro message
+
 -------------------------------------------------
 --------------| Editor behaviour |---------------
 -------------------------------------------------
