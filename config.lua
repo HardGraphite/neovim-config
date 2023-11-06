@@ -41,6 +41,7 @@ vim_o.list = true
 vim_o.listchars = "tab:▸ ,trail:·"
 vim_o.showcmd = false
 vim_o.showmode = false
+usepkg.now("ibl")
 
 --- status line ---
 usepkg.now("lualine", {
