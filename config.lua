@@ -36,7 +36,7 @@ vim_o.relativenumber = true
 --- marks and rulers ---
 vim_o.hlsearch = true
 vim_o.cursorline = true
-vim_o.colorcolumn = 80
+vim_o.colorcolumn = "80" -- must be a string!
 vim_o.list = true
 vim_o.listchars = "tab:▸ ,trail:·"
 vim_o.showcmd = false
