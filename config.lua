@@ -1,7 +1,18 @@
+local vim_g = vim.g
 local vim_o = vim.o
+local vim_keymap_set = vim.keymap.set
 local usepkg = require "jet.usepkg"
 
+usepkg.now("plenary", false) -- required by telescope
+
 local is_gui = vim.g.neovide
+local mod = nil -- temporary module variable
+
+local function keymap_set_keys(mode, key_prefix, keys_and_funcs, opts)
+  for k, f in pairs(keys_and_funcs) do
+    vim_keymap_set("n", key_prefix .. k, f, opts)
+  end
+end
 
 -------------------------------------------------
 ---------------| Theme and color |---------------
@@ -41,7 +52,6 @@ usepkg.now("lualine", {
   }
 })
 
-
 -------------------------------------------------
 --------------| Editor behaviour |---------------
 -------------------------------------------------
@@ -72,3 +82,49 @@ vim_o.expandtab = true
 vim_o.incsearch = true
 vim_o.smartcase = true
 vim_o.ignorecase = true
+
+-------------------------------------------------
+----------------| Key bindings |-----------------
+-------------------------------------------------
+
+vim_g.mapleader = " "
+
+-------------------------------------------------
+----------| Search, list, and jump |-------------
+-------------------------------------------------
+
+--- the "telescope" plugin ---
+usepkg.now("telescope", {
+  defaults = {
+    sorting_strategy = "ascending",
+    winblend = 10,
+    prompt_prefix = "» ",
+    selection_caret = "☞ ",
+    preview = {
+      filesize_limit = 1,
+      highlight_limit = 0.1,
+      msg_bg_fillchar = "▚",
+    },
+    mappings = {
+      n = {
+        ["<M-?>"] = "which_key",
+      },
+      i = {
+        ["<M-j>"] = "move_selection_next",
+        ["<M-k>"] = "move_selection_previous",
+        ["<M-u>"] = "preview_scrolling_up",
+        ["<M-d>"] = "preview_scrolling_down",
+        ["<M-?>"] = "which_key",
+      },
+    },
+  },
+})
+mod = require("telescope.builtin")
+keymap_set_keys("n", "<leader>" .. "f", {
+  f = mod.find_files,
+  g = mod.live_grep,
+  s = mod.current_buffer_fuzzy_find,
+  b = mod.buffers,
+})
+mod = nil
+
