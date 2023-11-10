@@ -7,6 +7,7 @@ usepkg.now("plenary", false) -- required by telescope
 
 local is_gui = vim.g.neovide
 local mod = nil -- temporary module variable
+local tmp = nil -- temporary variable
 
 local function keymap_set_keys(mode, key_prefix, keys_and_funcs, opts)
   for k, f in pairs(keys_and_funcs) do
@@ -151,3 +152,71 @@ require("nvim-treesitter.configs").setup{
   highlight = { enable = true },
   --incremental_selection = { enable = true },
 }
+
+--- language server protocol ---
+mod = usepkg.now("lspconfig", false)
+tmp = {
+  on_attach = function(_, bufnr)
+    local vim_lsp_buf = vim.lsp.buf
+    local map_opts = { buffer = bufnr }
+    keymap_set_keys("n", "g", {
+      d = vim_lsp_buf.definition,
+      D = vim_lsp_buf.declaration,
+      h = vim_lsp_buf.hover,
+      i = vim_lsp_buf.implementation,
+      r = vim_lsp_buf.references,
+    }, map_opts)
+    vim.opt.signcolumn = "yes"
+  end,
+  capabilities = usepkg.now("cmp_nvim_lsp").default_capabilities(),
+}
+for _, x in ipairs{
+  "clangd", -- C/C++
+  "pyright", -- Python
+  "cmake", -- CMake
+  "lua_ls", -- Lua
+  "texlab", -- LaTeX
+} do
+  mod[x].setup(tmp)
+end
+tmp = nil
+mod = vim.diagnostic
+keymap_set_keys("n", "", {
+  ["[e"] = mod.goto_prev,
+  ["]e"] = mod.goto_next,
+  ["<cr>e"] = mod.open_float,
+  ["\\e"] = mod.setloclist,
+})
+mod = nil
+
+--- code snippets ---
+usepkg.now("luasnip", false)
+
+--- completion ---
+mod = usepkg.now("cmp", false)
+mod.setup{
+  completion = {
+    completeopt = "menu,menuone",
+  },
+  snippet = {
+    expand = function(arg)
+      require("luasnip").lsp_expand(arg.body)
+    end,
+  },
+  mapping = {
+    ["<up>"] = mod.mapping.select_prev_item(),
+    ["<down>"] = mod.mapping.select_next_item(),
+    ["<M-k>"] = mod.mapping.select_prev_item(),
+    ["<M-j>"] = mod.mapping.select_next_item(),
+    ["<M-K>"] = mod.mapping.scroll_docs(-5),
+    ["<M-J>"] = mod.mapping.scroll_docs(5),
+    ["<cr>"] = mod.mapping.confirm(),
+    ["<tab>"] = mod.mapping.complete_common_string(),
+    ["<M-esc>"] = mod.mapping.abort(),
+  },
+  sources = {
+    { name = "nvim_lsp" },
+    { name = "luasnip" },
+  },
+}
+mod = nil
