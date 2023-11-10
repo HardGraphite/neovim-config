@@ -2,8 +2,7 @@
 
 local M = {}
 
----Path to a key-value file that stores the package name and the repo URL
----like "NAME REPO" in each line. Lines start with "#" are ignored.
+---Path to the package list file.
 M.pkglist = vim.fn.stdpath("config") .. '/packages.conf'
 
 ---Path to a directory to put package files.
@@ -23,82 +22,175 @@ local function git_cmd(args, cwd, callback)
   )
 end
 
-local function load_pkglist()
-  local ok, lines = pcall(vim.fn.readfile, M.pkglist)
-  if ok then
-    local list = {}
-    for _, line in ipairs(lines) do
-      if line ~= "" and string.sub(line, 1, 1) ~= "#" then
-        local pos0, pos1 = string.find(line, "%s+")
-        if pos0 then
-          list[string.sub(line, 1, pos0 - 1)] = string.sub(line, pos1 + 1)
-        end
+local function make_cmd(args, cwd, callback)
+  local handle
+  handle = vim.loop.spawn(
+    "make", { stdio = {nil, nil, nil}, args = args, cwd = cwd },
+    function(exit_code)
+      handle:close()
+      if callback then
+        local ok = exit_code == 0
+        vim.schedule(function() callback(ok) end)
       end
     end
-    return list
-  else
+  )
+end
+
+local function load_pkglist()
+  local conf = require "jet.rdconf" (M.pkglist)
+  if not conf then
     vim.notify(
-      "Cannot read from package list file: " .. M.pkglist,
+      "[usepkg] cannot read from package list file: " .. M.pkglist,
       vim.log.levels.ERROR
     )
   end
+  return conf
 end
 
-local function sync_next()
-  local name, repo = M._sync_next(M._sync_list, M._sync_curr)
-  if not name then
-    vim.notify(string.format(
-      "Sync done, %d/%d succeeded",
-      M._sync_succ, M._sync_succ + M._sync_fail
-    ))
-    M._sync_next = nil
-    M._sync_list = nil
-    M._sync_curr = nil
-    M._sync_fail = nil
-    return
-  else
-    M._sync_curr = name
-  end
-  dir = M.pkgdir .. '/' .. name
+---@class SyncState
+---@field num_total number
+---@field num_done number
+---@field new_only boolean
+---@field after_down function|nil
+---@field _iter_list table
+---@field _iter_next function
+---@field _iter_this string|nil
+local SyncState = { }
+SyncState.__index = SyncState
 
-  local function sync_callback(ok)
-    if ok then
-      M._sync_succ = M._sync_succ + 1
-    else
-      M._sync_fail = M._sync_fail + 1
+---Print a notification.
+function SyncState.notify(msg, is_err)
+  local level
+  if is_err then
+    level = vim.log.levels.ERROR
+  else
+    level = vim.log.levels.INFO
+  end
+  vim.notify("[usepkg.sync] " .. msg, level)
+end
+
+---Create SyncState object
+---@param pkg_list table package list
+---@param filter? boolean|string[] `false` = all; `true` = new only; list = names
+---@param callback? function function to be called after finished
+function SyncState:new(pkg_list, filter, callback)
+  local n = 0
+  if type(filter) == "table" then
+    local new_list = {}
+    for _, name in pairs(filter) do
+      local pkg = pkg_list[name]
+      if not pkg then
+        self.notify("unknown package: " .. name, true)
+        return nil
+      end
+      new_list[name] = pkg
     end
-    sync_next()
+    pkg_list = new_list
+    n = #filter
+  else
+    for _ in pairs(pkg_list) do
+      n = n + 1
+    end
+  end
+  local obj = {
+    num_total = n,
+    num_done = 0,
+    new_only = filter == true,
+    after_down = callback,
+  }
+  obj._iter_next, obj._iter_list, obj._iter_this = pairs(pkg_list)
+  setmetatable(obj, SyncState)
+  return obj
+end
+
+---Start synchronization.
+function SyncState:start()
+  if self.num_done == 0 then
+    if not vim.loop.fs_stat(M.pkgdir) then
+      vim.fn.mkdir(M.pkgdir)
+    end
+    self:_sync_next()
+  end
+end
+
+function SyncState:_sync_next()
+  local pkg_name, pkg_conf = self._iter_next(self._iter_list, self._iter_this)
+  if not pkg_name then
+    self.notify("done")
+    if self.after_down then
+      self.after_down(self)
+    end
+    return
   end
 
-  if vim.loop.fs_stat(dir) then
-    git_cmd({"pull"}, dir, sync_callback)
+  self._iter_this = pkg_name
+  local pkg_dir = M.pkgdir .. '/' .. pkg_name
+
+  local function _callback(ok)
+    self.num_done = self.num_done + 1
+    if ok then
+      if pkg_conf.make then
+        make_cmd({pkg_conf.make}, pkg_dir)
+        self.notify(pkg_name .. ": make " .. pkg_conf.make)
+      end
+    else
+      self.notify(pkg_name .. ": failed")
+    end
+    self:_sync_next()
+  end
+
+  local op_desc
+  if vim.loop.fs_stat(pkg_dir) then
+    if self.new_only then
+      op_desc = "skip"
+      vim.schedule(_callback)
+    else
+      op_desc = "updating"
+      git_cmd({"pull"}, pkg_dir, _callback)
+    end
   else
+    op_desc = "downloading"
     git_cmd(
-      {"clone", repo, dir, "--filter=blob:none", "--depth=1"},
-      nil, sync_callback
+      {"clone", pkg_conf.repo, pkg_dir, "--filter=blob:none", "--depth=1"},
+      nil, _callback
     )
   end
-  vim.notify("Syncing package `" .. name .. "' ...")
+  self.notify(string.format(
+    "(%d/%d) %s `%s'...",
+    self.num_done + 1, self.num_total, op_desc, pkg_name
+  ))
 end
 
 ---Download or update packages.
-function M.sync()
+function M.sync(filter)
   local packages = load_pkglist()
-  if not packages or M._sync_list then
+  if not packages or M._sync_state then
     return
   end
-  if not vim.loop.fs_stat(M.pkgdir) then
-    vim.fn.mkdir(M.pkgdir)
+  local sync_state = SyncState:new(packages, filter, function(s)
+    assert(s == M._sync_state)
+    M._sync_state = nil
+  end)
+  if sync_state then
+    M._sync_state = sync_state
+    sync_state:start()
   end
-  M._sync_next, M._sync_list, M._sync_curr = pairs(packages)
-  M._sync_succ, M._sync_fail = 0, 0
-  sync_next()
 end
 
----Command: PkgSync
-vim.api.nvim_create_user_command("PkgSync", M.sync, {})
+vim.api.nvim_create_user_command("PkgSync", function(arg)
+  local cmd_args = arg.args
+  local filter
+  if cmd_args == "" or cmd_args == "*" then
+    filter = false
+  elseif cmd_args == "+" then
+    filter = true
+  else
+    filter = {cmd_args}
+  end
+  M.sync(filter)
+end, {nargs = "?"})
 
----Add package directory into rpt.
+---Add package directory into rtp.
 ---@param pkg string
 function M.add_path(pkg)
   local path = M.pkgdir .. '/' .. pkg
