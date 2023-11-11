@@ -145,6 +145,18 @@ mod = nil
 ------------| Programming support |--------------
 -------------------------------------------------
 
+--- auto pair ---
+usepkg.now("nvim-autopairs", {
+  check_ts = true,
+  fast_wrap = {
+    map = "<M-'>",
+    keys = "asdfghjkl",
+    end_key = "'",
+    before_key = ";",
+    after_key = "'",
+  },
+})
+
 --- tree-sitter ---
 usepkg.now("nvim-treesitter", false)
 require("nvim-treesitter.configs").setup{
