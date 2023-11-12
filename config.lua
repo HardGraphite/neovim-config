@@ -168,6 +168,13 @@ usepkg.now("nvim-autopairs", {
   },
 })
 
+--- comment/uncomment ---
+usepkg.now("Comment", {
+  toggler = { line = "z;;", block = "z::" },
+  opleader = { line = "z;", block = "z:" },
+  extra = { above = "z;O", below = "z;o", eol = "z;A" },
+})
+
 --- tree-sitter ---
 usepkg.now("nvim-treesitter", false)
 require("nvim-treesitter.configs").setup{
