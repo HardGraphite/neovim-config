@@ -163,6 +163,7 @@ require("nvim-treesitter.configs").setup{
   parser_install_dir = add_to_rtp("treesitter_parsers", "data"),
   highlight = { enable = true },
   --incremental_selection = { enable = true },
+  indent = { enable = true },
 }
 
 --- language server protocol ---
