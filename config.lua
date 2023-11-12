@@ -1,5 +1,6 @@
 local vim_g = vim.g
 local vim_o = vim.o
+local vim_autocmd = vim.api.nvim_create_autocmd
 local vim_keymap_set = vim.keymap.set
 local usepkg = require "jet.usepkg"
 
@@ -9,12 +10,14 @@ local is_gui = vim.g.neovide
 local mod = nil -- temporary module variable
 local tmp = nil -- temporary variable
 
+--- Set keys in key map with the same prefix.
 local function keymap_set_keys(mode, key_prefix, keys_and_funcs, opts)
   for k, f in pairs(keys_and_funcs) do
-    vim_keymap_set("n", key_prefix .. k, f, opts)
+    vim_keymap_set(mode, key_prefix .. k, f, opts)
   end
 end
 
+--- Add an stdpath based path to the runtime path and return it.
 local function add_to_rtp(path, stdpath_base_dir)
   if stdpath_base_dir then
     path = vim.fn.stdpath(stdpath_base_dir) .. '/' .. path
@@ -35,7 +38,7 @@ usepkg.now("onedark", {
 }).load()
 
 -------------------------------------------------
-------------| Editor UI components |-------------
+----------| Editor UI and behaviours |-----------
 -------------------------------------------------
 
 --- line number ---
@@ -65,10 +68,6 @@ usepkg.now("lualine", {
 --- startup screen ---
 vim_o.shortmess = vim_o.shortmess .. "I" -- disable the intro message
 
--------------------------------------------------
---------------| Editor behaviour |---------------
--------------------------------------------------
-
 --- records and backups ---
 vim_o.history = 64
 vim_o.backup = false
@@ -95,6 +94,18 @@ vim_o.expandtab = true
 vim_o.incsearch = true
 vim_o.smartcase = true
 vim_o.ignorecase = true
+
+--- options for specific options ---
+vim_autocmd("TermOpen", {
+  callback = function()
+    local vim_wo = vim.wo
+    vim_wo.number = false
+    vim_wo.relativenumber = false
+    vim_wo.cursorline = false
+    vim_wo.colorcolumn = nil
+    vim_wo.list = false
+  end
+})
 
 -------------------------------------------------
 ----------------| Key bindings |-----------------
