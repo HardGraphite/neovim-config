@@ -10,10 +10,16 @@ local is_gui = vim.g.neovide
 local mod = nil -- temporary module variable
 local tmp = nil -- temporary variable
 
---- Set keys in key map with the same prefix.
-local function keymap_set_keys(mode, key_prefix, keys_and_funcs, opts)
+--- Set keys in key maps.
+local function keymap_set_keys(modes, key_prefix, keys_and_funcs, opts)
+  if type(modes) == "table" then
+    for _, m in ipairs(modes) do
+      keymap_set_keys(m, key_prefix, keys_and_funcs, opts)
+    end
+    return
+  end
   for k, f in pairs(keys_and_funcs) do
-    vim_keymap_set(mode, key_prefix .. k, f, opts)
+    vim_keymap_set(modes, key_prefix .. k, f, opts)
   end
 end
 
@@ -150,6 +156,24 @@ keymap_set_keys("n", "<leader>" .. "f", {
   s = mod.current_buffer_fuzzy_find,
   b = mod.buffers,
 })
+mod = nil
+
+--- the "flash.nvim" plugin ---
+mod = usepkg.now("flash", {
+  jump = {
+    nohlsearch = true,
+  },
+  modes = {
+    char = { enabled = false },
+  },
+  highlight = { backdrop = false },
+  prompt = { enabled = false },
+})
+keymap_set_keys({"n", "x", "o"}, "", {
+  ["?"] = mod.jump,
+  ["g?"] = mod.treesitter,
+})
+vim_keymap_set("o", "r", mod.remote)
 mod = nil
 
 -------------------------------------------------
