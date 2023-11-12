@@ -71,9 +71,6 @@ usepkg.now("lualine", {
   }
 })
 
---- startup screen ---
-vim_o.shortmess = vim_o.shortmess .. "I" -- disable the intro message
-
 --- records and backups ---
 vim_o.history = 64
 vim_o.backup = false
@@ -275,3 +272,13 @@ mod.setup{
   },
 }
 mod = nil
+
+-------------------------------------------------
+----------------| Extra tools |------------------
+-------------------------------------------------
+
+--- start up screen and the scratch buffer ---
+vim_o.shortmess = vim_o.shortmess .. "I" -- disable the intro message
+require("jet.scratch").setup({
+  text = {"--- This buffer is NOT part of GNU Emacs. ---"},
+})
