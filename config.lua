@@ -1,3 +1,5 @@
+--- Configuration for Neovim ---
+
 local vim_g = vim.g
 local vim_o = vim.o
 local vim_autocmd = vim.api.nvim_create_autocmd
