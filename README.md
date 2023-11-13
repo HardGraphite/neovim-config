@@ -5,6 +5,7 @@ Personal configuration for the [Neovim](https://neovim.io/) editor.
 ## Requirements
 
 - `Neovim` 0.9
+- `Git`
 - `GNU Make`
 
 Optional:

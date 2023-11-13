@@ -265,3 +265,21 @@ vim_o.shortmess = vim_o.shortmess .. "I" -- disable the intro message
 require("jet.scratch").setup({
   text = {"--- This buffer is NOT part of GNU Emacs. ---"},
 })
+
+--- Git integration ---
+-- Git operation panel
+usepkg.now("neogit", {
+  filewatcher = { enabled = false },
+  signs = {
+    section = { "⮚", "⮛" },
+    item = { "", "" },
+    hunk = { "", "" },
+  },
+})
+-- Git signs for buffers
+usepkg.now("gitsigns", {
+  watch_gitdir = { enable = false },
+  attach_to_untracked = false,
+  update_debounce = 600,
+  max_file_length = 10000,
+})
