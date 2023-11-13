@@ -1,36 +1,14 @@
 local vim_g = vim.g
 local vim_o = vim.o
 local vim_autocmd = vim.api.nvim_create_autocmd
-local vim_keymap_set = vim.keymap.set
+local util = require "jet.confutil"
 local usepkg = require "jet.usepkg"
 
 usepkg.now("plenary", false) -- required by telescope
 
-local is_gui = vim.g.neovide
+local is_gui = vim_g.neovide
 local mod = nil -- temporary module variable
 local tmp = nil -- temporary variable
-
---- Set keys in key maps.
-local function keymap_set_keys(modes, key_prefix, keys_and_funcs, opts)
-  if type(modes) == "table" then
-    for _, m in ipairs(modes) do
-      keymap_set_keys(m, key_prefix, keys_and_funcs, opts)
-    end
-    return
-  end
-  for k, f in pairs(keys_and_funcs) do
-    vim_keymap_set(modes, key_prefix .. k, f, opts)
-  end
-end
-
---- Add an stdpath based path to the runtime path and return it.
-local function add_to_rtp(path, stdpath_base_dir)
-  if stdpath_base_dir then
-    path = vim.fn.stdpath(stdpath_base_dir) .. '/' .. path
-  end
-  vim.opt.rtp:append(path)
-  return path
-end
 
 -------------------------------------------------
 ---------------| Theme and color |---------------
@@ -147,7 +125,8 @@ usepkg.now("telescope", {
   },
 })
 mod = require("telescope.builtin")
-keymap_set_keys("n", "<leader>" .. "f", {
+util.set_keys("n", {
+  "<leader>" .. "f",
   f = mod.find_files,
   g = mod.live_grep,
   s = mod.current_buffer_fuzzy_find,
@@ -166,11 +145,11 @@ mod = usepkg.now("flash", {
   highlight = { backdrop = false },
   prompt = { enabled = false },
 })
-keymap_set_keys({"n", "x", "o"}, "", {
+util.set_keys({"n", "x", "o"}, {
   ["?"] = mod.jump,
   ["g?"] = mod.treesitter,
 })
-vim_keymap_set("o", "r", mod.remote)
+util.set_key("o", "r", mod.remote)
 mod = nil
 
 -------------------------------------------------
@@ -199,7 +178,7 @@ usepkg.now("Comment", {
 --- tree-sitter ---
 usepkg.now("nvim-treesitter", false)
 require("nvim-treesitter.configs").setup{
-  parser_install_dir = add_to_rtp("treesitter_parsers", "data"),
+  parser_install_dir = util.add_path("treesitter_parsers", "data"),
   highlight = { enable = true },
   --incremental_selection = { enable = true },
   indent = { enable = true },
@@ -210,8 +189,10 @@ mod = usepkg.now("lspconfig", false)
 tmp = {
   on_attach = function(_, bufnr)
     local vim_lsp_buf = vim.lsp.buf
+    local util_set_keys = require("jet.confutil").set_keys
     local map_opts = { buffer = bufnr }
-    keymap_set_keys("n", "g", {
+    util_set_keys("n", {
+      "g",
       d = vim_lsp_buf.definition,
       D = vim_lsp_buf.declaration,
       h = vim_lsp_buf.hover,
@@ -233,7 +214,7 @@ for _, x in ipairs{
 end
 tmp = nil
 mod = vim.diagnostic
-keymap_set_keys("n", "", {
+util.set_keys("n", {
   ["[e"] = mod.goto_prev,
   ["]e"] = mod.goto_next,
   ["<cr>e"] = mod.open_float,
