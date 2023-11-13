@@ -102,7 +102,7 @@ vim_g.mapleader = " "
 usepkg.now("telescope", {
   defaults = {
     sorting_strategy = "ascending",
-    winblend = 10,
+    -- winblend = 10, -- enable when blurred background is available
     prompt_prefix = "» ",
     selection_caret = "☞ ",
     preview = {
