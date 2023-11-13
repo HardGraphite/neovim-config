@@ -50,8 +50,10 @@ end
 ---@class SyncState
 ---@field num_total number
 ---@field num_done number
+---@field num_make_tasks number
 ---@field new_only boolean
 ---@field after_down function|nil
+---@field has_ui boolean
 ---@field _iter_list table
 ---@field _iter_next function
 ---@field _iter_this string|nil
@@ -59,8 +61,11 @@ local SyncState = { }
 SyncState.__index = SyncState
 
 ---Print a notification.
-function SyncState.notify(msg, is_err)
+function SyncState:notify(msg, is_err)
   local level
+  if not self.has_ui then
+    msg = msg .. "\n"
+  end
   if is_err then
     level = vim.log.levels.ERROR
   else
@@ -80,7 +85,7 @@ function SyncState:new(pkg_list, filter, callback)
     for _, name in pairs(filter) do
       local pkg = pkg_list[name]
       if not pkg then
-        self.notify("unknown package: " .. name, true)
+        self:notify("unknown package: " .. name, true)
         return nil
       end
       new_list[name] = pkg
@@ -95,8 +100,10 @@ function SyncState:new(pkg_list, filter, callback)
   local obj = {
     num_total = n,
     num_done = 0,
+    num_make_tasks = 0,
     new_only = filter == true,
     after_down = callback,
+    has_ui = next(vim.api.nvim_list_uis()) ~= nil,
   }
   obj._iter_next, obj._iter_list, obj._iter_this = pairs(pkg_list)
   setmetatable(obj, SyncState)
@@ -113,28 +120,54 @@ function SyncState:start()
   end
 end
 
-function SyncState:_sync_next()
-  local pkg_name, pkg_conf = self._iter_next(self._iter_list, self._iter_this)
-  if not pkg_name then
-    self.notify("done")
+function SyncState:_may_done()
+  if self._iter_this == nil and self.num_make_tasks == 0 then
+    self:notify("done")
     if self.after_down then
       self.after_down(self)
     end
+    return true
+  end
+  return false
+end
+
+function SyncState:_sync_next()
+  local pkg_name, pkg_conf = self._iter_next(self._iter_list, self._iter_this)
+  self._iter_this = pkg_name
+
+  if not pkg_name then
+    self:_may_done()
     return
   end
 
-  self._iter_this = pkg_name
   local pkg_dir = M.pkgdir .. '/' .. pkg_name
 
   local function _callback(ok)
     self.num_done = self.num_done + 1
+    local msg
     if ok then
       if pkg_conf.make then
-        make_cmd({pkg_conf.make}, pkg_dir)
-        self.notify(pkg_name .. ": make " .. pkg_conf.make)
+        self.num_make_tasks = self.num_make_tasks + 1
+        make_cmd({pkg_conf.make}, pkg_dir, function(ok1)
+          self.num_make_tasks = self.num_make_tasks - 1
+          local msg1
+          if ok1 then
+            msg1 = "completed"
+          else
+            msg1 = "failed"
+          end
+          self:notify(pkg_name .. ": make: " .. msg1)
+          self:_may_done()
+        end)
+        msg = "make " .. pkg_conf.make
+      else
+        msg = "completed"
       end
-    else
-      self.notify(pkg_name .. ": failed")
+    elseif ok == false then
+      msg = "failed"
+    end
+    if msg then
+      self:notify(pkg_name .. ": " .. msg)
     end
     self:_sync_next()
   end
@@ -155,14 +188,16 @@ function SyncState:_sync_next()
       nil, _callback
     )
   end
-  self.notify(string.format(
+  self:notify(string.format(
     "(%d/%d) %s `%s'...",
     self.num_done + 1, self.num_total, op_desc, pkg_name
   ))
 end
 
 ---Download or update packages.
-function M.sync(filter)
+---@param filter boolean|string[] see `SyncState:new()`
+---@param callback? function callback function to be called after done
+function M.sync(filter, callback)
   local packages = load_pkglist()
   if not packages or M._sync_state then
     return
@@ -170,6 +205,9 @@ function M.sync(filter)
   local sync_state = SyncState:new(packages, filter, function(s)
     assert(s == M._sync_state)
     M._sync_state = nil
+    if callback then
+      callback(true)
+    end
   end)
   if sync_state then
     M._sync_state = sync_state
@@ -179,15 +217,20 @@ end
 
 vim.api.nvim_create_user_command("PkgSync", function(arg)
   local cmd_args = arg.args
-  local filter
+  local filter, callback
   if cmd_args == "" or cmd_args == "*" then
     filter = false
   elseif cmd_args == "+" then
     filter = true
+  elseif cmd_args == "$" then
+    filter = true
+    callback = function(ok)
+      vim.cmd("q")
+    end
   else
     filter = {cmd_args}
   end
-  M.sync(filter)
+  M.sync(filter, callback)
 end, {nargs = "?"})
 
 ---Add package directory into rtp.

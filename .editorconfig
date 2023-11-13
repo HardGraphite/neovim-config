@@ -9,3 +9,9 @@ insert_final_newline = true
 
 [*.lua]
 indent_size = 2
+
+[*.md]
+indent_size = 2
+
+[Makefile]
+indent_style = tab

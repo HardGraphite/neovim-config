@@ -5,6 +5,7 @@ Personal configuration for the [Neovim](https://neovim.io/) editor.
 ## Requirements
 
 - `Neovim` 0.9
+- `GNU Make`
 
 Optional:
 
@@ -14,7 +15,8 @@ Optional:
 
 ## How to setup
 
-Start Neovim and execute command "`PkgSync`".
+1. Run "`make packages`" to install packages.
+2. (Optional) start nvim and use "`TSInstall`" to install Tree-sitter parsers.
 
 ## About Neovide
 
