@@ -219,23 +219,28 @@ function M.sync(filter, callback)
   end
 end
 
-vim.api.nvim_create_user_command("PkgSync", function(arg)
-  local cmd_args = arg.args
+--- `PkgSync[!] [+|*|PACKAGE...]`
+--- - `!`: quit after done
+--- - `+`: new packages only
+--- - `*`: all packages (default)
+--- - `PACKAGE...`: a list of package names
+vim.api.nvim_create_user_command("PkgSync", function(args)
+  local cmd_args = args.args
   local filter, callback
   if cmd_args == "" or cmd_args == "*" then
     filter = false
   elseif cmd_args == "+" then
     filter = true
-  elseif cmd_args == "$" then
-    filter = true
-    callback = function(ok)
-      vim.cmd("q")
-    end
   else
-    filter = {cmd_args}
+    filter = vim.fn.split(cmd_args)
+  end
+  if args.bang then
+    callback = function()
+      vim.cmd.q()
+    end
   end
   M.sync(filter, callback)
-end, {nargs = "?"})
+end, {nargs = "?", bang = true})
 
 --
 --- Package loading management ---
