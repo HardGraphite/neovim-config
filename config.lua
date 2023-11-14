@@ -23,6 +23,9 @@ usepkg.now("onedark", {
   ending_tildes = true,
 }).load()
 
+--- icon characters ---
+usepkg.now("nvim-web-devicons")
+
 -------------------------------------------------
 ----------| Editor UI and behaviours |-----------
 -------------------------------------------------

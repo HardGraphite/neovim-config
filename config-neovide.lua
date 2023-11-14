@@ -15,7 +15,7 @@ local vim_o = vim.o
 local usepkg = require "jet.usepkg"
 
 --- font ---
-vim_o.guifont = "JetBrainsMono Nerd Font Mono:mono:Symbols Nerd Font Mono:h15"
+vim_o.guifont = "JetBrainsMono Nerd Font:mono:Symbols Nerd Font Mono:h15"
 
 --- basic behaviors ---
 vim_g.neovide_scroll_animation_length = 0.5
