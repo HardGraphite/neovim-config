@@ -12,6 +12,7 @@
 
 local vim_g = vim.g
 local vim_o = vim.o
+local usepkg = require "jet.usepkg"
 
 --- font ---
 vim_o.guifont = "JetBrainsMono Nerd Font Mono:mono:Symbols Nerd Font Mono:h15"
@@ -34,7 +35,8 @@ vim_g.neovide_cursor_animate_command_line = false
 --vim_g.neovide_floating_blur_amount_y = 2
 vim_o.pumblend = 30
 vim_o.winblend = 30
-require("telescope.config").values.winblend = 40
+--require("telescope.config").values.winblend = 40
+usepkg.options("telescope", { defaults = { winblend = 40 } })
 
 --- floating window: shadow ---
 -- TODO: https://neovide.dev/configuration.html#floating-shadow

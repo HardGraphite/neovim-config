@@ -8,6 +8,10 @@ M.pkglist = vim.fn.stdpath("config") .. '/packages.conf'
 ---Path to a directory to put package files.
 M.pkgdir = vim.fn.stdpath("data") .. '/packages'
 
+--
+--- Package downloading and updating ---
+--
+
 local function git_cmd(args, cwd, callback)
   local handle
   handle = vim.loop.spawn(
@@ -233,8 +237,12 @@ vim.api.nvim_create_user_command("PkgSync", function(arg)
   M.sync(filter, callback)
 end, {nargs = "?"})
 
+--
+--- Package loading management ---
+--
+
 ---Add package directory into rtp.
----@param pkg string
+---@param pkg string package name
 function M.add_path(pkg)
   local path = M.pkgdir .. '/' .. pkg
   vim.opt.rtp:append(path)
@@ -242,18 +250,173 @@ function M.add_path(pkg)
 end
 
 ---Load package now.
----@param pkg string
----@param setup? boolean|table
+---@param pkg string package name
+---@param setup? boolean|table whether to call the setup function
+---@return mod table the loaded module (the return value from `require()`)
+---@return dir string the runtime path associated with this package
 function M.now(pkg, setup)
-  M.add_path(pkg)
-  local m = require(pkg)
+  -- Load the module.
+  local dir = M.add_path(pkg)
+  local mod = require(pkg)
+  -- Call `setup()`.
   if setup ~= false then
     if setup == true then
       setup = nil
     end
-    m.setup(setup)
+    mod.setup(setup)
   end
-  return m
+  return mod, dir
+end
+
+M._deferred = {
+  pkgs = {}, -- { NAME = { setup, callback } , ... }
+  au = {}, -- autocmd lists: { EVENT1 = {PKG1, PKG2, ... }, ... }
+  cmd = {}, -- command lists: { CMD1 = {PKG1, PKG2, ... }, ... }
+  hook = {}, -- hook lists: { HOOK1 = {PKG1, PKG2, ... }, ... }
+  ---Record a package (name and config)
+  rec = function(self, pkg, setup, cb)
+    self.pkgs[pkg] = { setup, cb }
+  end,
+  ---Register a trigger for a package
+  add = function(self, type_, arg, pkg)
+    local dict = self[type_]
+    local list = dict[arg]
+    if list then
+      table.insert(list, pkg)
+      return false
+    else
+      dict[arg] = { pkg }
+      return true
+    end
+  end,
+  ---Load a package by trigger
+  now = function(self, type_, arg)
+    local list = self[type_][arg]
+    if not list then
+      return false
+    end
+    self[type_][arg] = nil
+    for _, pkg in ipairs(list) do
+      local conf = self.pkgs[pkg]
+      if not conf then
+        goto continue
+      end
+      self.pkgs[pkg] = nil
+      local mod, dir = M.now(pkg, conf[1]) -- load package
+      if conf[2] then
+        conf[2](pkg, mod) -- execute callback
+      end
+      local files = vim.fn.glob(dir .. "/plugin/*.lua")
+      if files ~= "" then
+        for _, x in ipairs(vim.fn.split(files, "\n")) do
+          dofile(x) -- source plugin files
+        end
+      end
+      ::continue::
+    end
+    return true
+  end
+}
+
+---Defer a package loading.
+---@param triggers {string:string|table} trigger types (au|cmd|hook) and the arguments
+---@param pkg string package name
+---@param setup? boolean|table see function `usepkg.now()`
+---@param callback? function callback function that takes arguments (name, module)
+function M.when(triggers, pkg, setup, callback)
+  local d = M._deferred
+  -- Record the configuration.
+  d:rec(pkg, setup, callback)
+  -- Register triggers.
+  for t_type, t_args in pairs(triggers) do
+    if type(t_args) ~= "table" then
+      t_args = { t_args }
+    end
+    for _, t_arg in ipairs(t_args) do
+      local arg_is_new = d:add(t_type, t_arg, pkg)
+      if t_type == "au" then
+        if arg_is_new then
+          vim.api.nvim_create_autocmd(t_arg, {callback = function(ev)
+            M._deferred:now("au", ev.event)
+            return true -- delete this autocmd
+          end})
+        end
+      elseif t_type == "cmd" then
+        if arg_is_new then
+          vim.api.nvim_create_user_command(t_arg, function(args)
+            vim.api.nvim_del_user_command(args.name)
+            M._deferred:now("cmd", args.name)
+            vim.api.nvim_cmd({
+              cmd = args.name,
+              args = vim.fn.split(args.args),
+              bang = args.bang,
+            }, {})
+          end, {
+            nargs = "*",
+            bang = true,
+            force = false,
+          })
+        end
+      elseif t_type == "hook" then
+        -- do nothing
+      else
+        error("bad trigger tpye: " .. t_type)
+      end
+    end
+  end
+end
+
+---Modify package setup options. See `usepkg.when()`.
+---@param pkg string package name
+---@param opts? table new options
+---@return table|nil opts updated options; `nil` if package not recorded
+function M.options(pkg, opts)
+  local rec = M._deferred.pkgs[pkg]
+  if not rec then
+    return nil
+  end
+  if opts then
+    opts = vim.tbl_deep_extend("force", rec[1], opts)
+    rec[1] = opts
+  else
+    opts = rec[1]
+  end
+  return opts
+end
+
+---Trigger hook and load associated packages. See `usepkg.when()`.
+---@param name string hook name
+---@return boolean ok
+function M.hook(name)
+  return M._deferred:now("hook", name)
+end
+
+---Enable or disable package load timing.
+---@param op? boolean|nil `true`: enable; `false`: disable; `nil`: get results
+function M.timing(op)
+  if op == nil then -- get results
+    return M._times
+  elseif op then -- enable
+    if not M._now then
+      M._now = M.now
+      M._times = {}
+      M.now = function(pkg, opts)
+        local t0 = os.clock()
+        local mod, dir = M._now(pkg, opts)
+        local dt = os.clock() - t0
+        if not M._times[pkg] then
+          M._times[pkg] = dt
+        end
+        return mod, dir
+      end
+    end
+  else -- disable
+    if M._now then
+      M.now = M._now
+      M._now = nil
+      M._times = nil
+    end
+  end
 end
 
 return M

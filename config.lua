@@ -6,7 +6,7 @@ local vim_autocmd = vim.api.nvim_create_autocmd
 local util = require "jet.confutil"
 local usepkg = require "jet.usepkg"
 
-usepkg.now("plenary", false) -- required by telescope
+usepkg.now("plenary", false) -- required by neogit, telescope
 
 local is_gui = vim_g.neovide
 local mod = nil -- temporary module variable
@@ -39,7 +39,7 @@ vim_o.list = true
 vim_o.listchars = "tab:▸ ,trail:·"
 vim_o.showcmd = false
 vim_o.showmode = false
-usepkg.now("ibl")
+usepkg.when({ au = "UIEnter" }, "ibl") -- indent guide
 
 --- status line ---
 usepkg.now("lualine", {
@@ -101,7 +101,7 @@ vim_g.mapleader = " "
 -------------------------------------------------
 
 --- the "telescope" plugin ---
-usepkg.now("telescope", {
+usepkg.when({ au = "UIEnter" }, "telescope", {
   defaults = {
     sorting_strategy = "ascending",
     -- winblend = 10, -- enable when blurred background is available
@@ -125,19 +125,19 @@ usepkg.now("telescope", {
       },
     },
   },
-})
-mod = require("telescope.builtin")
-util.set_keys("n", {
-  "<leader>" .. "f",
-  f = mod.find_files,
-  g = mod.live_grep,
-  s = mod.current_buffer_fuzzy_find,
-  b = mod.buffers,
-})
-mod = nil
+}, function()
+  local mod = require("telescope.builtin")
+  util.set_keys("n", {
+    "<leader>" .. "f",
+    f = mod.find_files,
+    g = mod.live_grep,
+    s = mod.current_buffer_fuzzy_find,
+    b = mod.buffers,
+  })
+end)
 
 --- the "flash.nvim" plugin ---
-mod = usepkg.now("flash", {
+usepkg.when({ au = "UIEnter" }, "flash", {
   jump = {
     nohlsearch = true,
   },
@@ -146,13 +146,13 @@ mod = usepkg.now("flash", {
   },
   highlight = { backdrop = false },
   prompt = { enabled = false },
-})
-util.set_keys({"n", "x", "o"}, {
-  ["?"] = mod.jump,
-  ["g?"] = mod.treesitter,
-})
-util.set_key("o", "r", mod.remote)
-mod = nil
+}, function(_, mod)
+  util.set_keys({"n", "x", "o"}, {
+    ["?"] = mod.jump,
+    ["g?"] = mod.treesitter,
+  })
+  util.set_key("o", "r", mod.remote)
+end)
 
 -------------------------------------------------
 ------------| Programming support |--------------
@@ -225,36 +225,37 @@ util.set_keys("n", {
 mod = nil
 
 --- code snippets ---
-usepkg.now("luasnip", false)
+usepkg.when({ au = "UIEnter" }, "luasnip", false)
 
 --- completion ---
-mod = usepkg.now("cmp", false)
-mod.setup{
-  completion = {
-    completeopt = "menu,menuone",
-  },
-  snippet = {
-    expand = function(arg)
-      require("luasnip").lsp_expand(arg.body)
-    end,
-  },
-  mapping = {
-    ["<up>"] = mod.mapping.select_prev_item(),
-    ["<down>"] = mod.mapping.select_next_item(),
-    ["<M-k>"] = mod.mapping.select_prev_item(),
-    ["<M-j>"] = mod.mapping.select_next_item(),
-    ["<M-K>"] = mod.mapping.scroll_docs(-5),
-    ["<M-J>"] = mod.mapping.scroll_docs(5),
-    ["<cr>"] = mod.mapping.confirm(),
-    ["<tab>"] = mod.mapping.complete_common_string(),
-    ["<M-esc>"] = mod.mapping.abort(),
-  },
-  sources = {
-    { name = "nvim_lsp" },
-    { name = "luasnip" },
-  },
-}
-mod = nil
+usepkg.when({ au = "UIEnter" }, "cmp", false, function(_, mod)
+  local mapping = mod.mapping
+  mod.setup{
+    completion = {
+      completeopt = "menu,menuone",
+    },
+    snippet = {
+      expand = function(arg)
+        require("luasnip").lsp_expand(arg.body)
+      end,
+    },
+    mapping = {
+      ["<up>"] = mapping.select_prev_item(),
+      ["<down>"] = mapping.select_next_item(),
+      ["<M-k>"] = mapping.select_prev_item(),
+      ["<M-j>"] = mapping.select_next_item(),
+      ["<M-K>"] = mapping.scroll_docs(-5),
+      ["<M-J>"] = mapping.scroll_docs(5),
+      ["<cr>"] = mapping.confirm(),
+      ["<tab>"] = mapping.complete_common_string(),
+      ["<M-esc>"] = mapping.abort(),
+    },
+    sources = {
+      { name = "nvim_lsp" },
+      { name = "luasnip" },
+    },
+  }
+end)
 
 -------------------------------------------------
 ----------------| Extra tools |------------------
@@ -268,7 +269,7 @@ require("jet.scratch").setup({
 
 --- Git integration ---
 -- Git operation panel
-usepkg.now("neogit", {
+usepkg.when({ cmd = "Neogit" }, "neogit", {
   filewatcher = { enabled = false },
   signs = {
     section = { "⮚", "⮛" },
@@ -277,7 +278,7 @@ usepkg.now("neogit", {
   },
 })
 -- Git signs for buffers
-usepkg.now("gitsigns", {
+usepkg.when({ au = "UIEnter" }, "gitsigns", {
   watch_gitdir = { enable = false },
   attach_to_untracked = false,
   update_debounce = 600,
