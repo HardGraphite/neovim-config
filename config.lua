@@ -59,6 +59,7 @@ vim_o.history = 64
 vim_o.backup = false
 vim_o.undofile = false
 vim_o.swapfile = false
+vim_o.shadafile = vim.fn.stdpath("run") .. "/nvim.shada" -- temporary shada file
 
 --- file formats ---
 vim_o.fileformats = "unix"
@@ -130,6 +131,7 @@ usepkg.when({ au = "UIEnter" }, "telescope", {
         ["<M-Esc>"] = "close",
       },
     },
+    history = false,
   },
   pickers = {
     buffers = {
@@ -145,6 +147,7 @@ usepkg.when({ au = "UIEnter" }, "telescope", {
   util.set_keys("n", {
     "<leader>" .. "f",
     f = builtin.find_files,
+    F = builtin.oldfiles,
     g = builtin.live_grep,
     s = builtin.current_buffer_fuzzy_find,
     b = builtin.buffers,
@@ -208,6 +211,7 @@ require("nvim-treesitter.configs").setup{
 }
 
 --- language server protocol ---
+vim.lsp.set_log_level("OFF") -- disable LSP logging
 mod = usepkg.now("lspconfig", false)
 tmp = {
   on_attach = function(_, bufnr)
@@ -247,6 +251,17 @@ mod = nil
 
 --- code snippets ---
 usepkg.when({ au = "UIEnter" }, "luasnip", false)
+-- HACK: inhibit luasnip.log (see |luasnip-logging|)
+assert(package.loaded["luasnip.util.log"] == nil)
+package.loaded["luasnip.util.log"] = setmetatable({}, {
+  __index = function(self, key)
+    if key == "new" then
+      return function(_) return self end
+    else
+      return function(...) end
+    end
+  end
+})
 
 --- completion ---
 usepkg.when({ au = "UIEnter" }, "cmp", false, function(_, mod)
@@ -292,6 +307,8 @@ require("jet.scratch").setup({
 -- Git operation panel
 usepkg.when({ cmd = "Neogit" }, "neogit", {
   filewatcher = { enabled = false },
+  remember_settings = false,
+  use_per_project_settings = false,
   signs = {
     section = { "⮚", "⮛" },
     item = { "", "" },
