@@ -201,6 +201,22 @@ usepkg.now("Comment", {
   extra = { above = "z;O", below = "z;o", eol = "z;A" },
 })
 
+--- TODO highlighting ---
+usepkg.now("todo-comments", {
+  merge_keywords = false,
+  keywords = {
+    TODO = { icon = "", color = "info" },
+    FIXME = { icon = "", color = "error" },
+    HACK = { icon = "", signs = false, color = "warning" },
+    NOTE = { icon = "", color = "hint", alt = { "INFO" } },
+  },
+  gui_style = { fg = "bold,underline" },
+  highlight = {
+    keyword = "fg",
+    after = "",
+  },
+})
+
 --- tree-sitter ---
 usepkg.now("nvim-treesitter", false)
 require("nvim-treesitter.configs").setup{
