@@ -17,6 +17,10 @@ local usepkg = require "jet.usepkg"
 --- font ---
 vim_o.guifont = "JetBrainsMono Nerd Font:mono:Symbols Nerd Font Mono:h15"
 
+--- title ---
+vim_o.title = true
+vim_o.titlestring = "%f %m – Neovim"
+
 --- basic behaviors ---
 vim_g.neovide_scroll_animation_length = 0.5
 vim_g.neovide_hide_mouse_when_typing = true
