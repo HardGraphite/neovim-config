@@ -22,14 +22,17 @@ vim_o.title = true
 vim_o.titlestring = "%f %m – Neovim"
 
 --- basic behaviors ---
-vim_g.neovide_scroll_animation_length = 0.5
 vim_g.neovide_hide_mouse_when_typing = true
 --vim_g.neovide_remember_window_size = false
 vim_g.neovide_remember_window_position = false
 
+--- scroll animations ---
+vim_g.neovide_scroll_animation_length = 0.2
+vim_g.neovide_scroll_animation_far_lines = 3
+
 --- cursor animations ---
-vim_g.neovide_cursor_animation_length = 0.05
-vim_g.neovide_cursor_trail_size = 0.5
+vim_g.neovide_cursor_animation_length = 0.03
+vim_g.neovide_cursor_trail_size = 0.38
 vim_g.neovide_cursor_antialiasing = false
 vim_g.neovide_cursor_animate_command_line = false
 
