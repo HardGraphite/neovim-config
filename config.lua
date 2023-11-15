@@ -8,7 +8,7 @@ local usepkg = require "jet.usepkg"
 
 usepkg.now("plenary", false) -- required by neogit, telescope
 
-local is_gui = vim_g.neovide
+local use_icons = vim_g.neovide
 local mod = nil -- temporary module variable
 local tmp = nil -- temporary variable
 
@@ -48,8 +48,8 @@ usepkg.when({ au = "UIEnter" }, "ibl") -- indent guide
 usepkg.now("lualine", {
   options = {
     theme = "onedark",
-    section_separators = is_gui and { left = '', right = '' } or "",
-    component_separators = is_gui and { left = '', right = '' } or "",
+    section_separators = use_icons and { left = '', right = '' } or "",
+    component_separators = use_icons and { left = '', right = '' } or "",
     globalstatus = true,
   }
 })
@@ -107,9 +107,11 @@ vim_g.mapleader = " "
 usepkg.when({ au = "UIEnter" }, "telescope", {
   defaults = {
     sorting_strategy = "ascending",
-    -- winblend = 10, -- enable when blurred background is available
-    prompt_prefix = "» ",
+    --winblend = 10, -- enable when blurred background is available
+    prompt_prefix = use_icons and " " --[[ nf-fa-search, U+F002 ]] or "» ",
     selection_caret = "☞ ",
+    multi_icon = "✓",
+    path_display = { "truncate" },
     preview = {
       filesize_limit = 1,
       highlight_limit = 0.1,
@@ -125,17 +127,33 @@ usepkg.when({ au = "UIEnter" }, "telescope", {
         ["<M-u>"] = "preview_scrolling_up",
         ["<M-d>"] = "preview_scrolling_down",
         ["<M-?>"] = "which_key",
+        ["<M-Esc>"] = "close",
       },
     },
   },
+  pickers = {
+    buffers = {
+      --sort_lastused = true,
+      sort_mru = true,
+    },
+    find_files = {
+      find_command = { "fd", "--type", "f", "--color", "never" }, -- telescope/builtin/__files.lua
+    },
+  },
 }, function()
-  local mod = require("telescope.builtin")
+  local builtin = require("telescope.builtin")
   util.set_keys("n", {
     "<leader>" .. "f",
-    f = mod.find_files,
-    g = mod.live_grep,
-    s = mod.current_buffer_fuzzy_find,
-    b = mod.buffers,
+    f = builtin.find_files,
+    g = builtin.live_grep,
+    s = builtin.current_buffer_fuzzy_find,
+    b = builtin.buffers,
+    m = builtin.marks,
+    r = builtin.registers,
+    q = builtin.quickfix,
+    Q = builtin.quickfixhistory,
+    l = builtin.loclist,
+    j = builtin.jumplist,
   })
 end)
 
