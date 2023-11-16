@@ -50,9 +50,56 @@ usepkg.now("lualine", {
     theme = "onedark",
     section_separators = use_icons and { left = '', right = '' } or "",
     component_separators = use_icons and { left = '', right = '' } or "",
+    always_divide_middle = false,
     globalstatus = true,
+    refresh = { statusline = 10000, tabline = 10000, winbar = 10000 },
+  },
+  sections = {
+    lualine_a = { "mode" },
+    lualine_b = { { "location", padding = { left = 1 }, separator = "" }, "progress" },
+    lualine_c = { "filename" },
+    lualine_x = { "diff", "branch" },
+    lualine_y = { "diagnostics", "filetype" },
+    lualine_z = { },
   }
 })
+-- HACK: modify mode display names
+do
+  -- See: lualine/utils/mode.lua
+  local trans_map = {
+    ["NORMAL"] = "N", ["O-PENDING"] = "N+",
+    ["INSERT"] = "I",
+    ["VISUAL"] = "V", ["V-LINE"] = "V=", ["V-BLOCK"] = "V#",
+    ["SELECT"] = "S", ["S-LINE"] = "S=", ["S-BLOCK"] = "S#",
+    ["REPLACE"] = "R", ["V-REPLACE"] = "R*",
+    ["COMMAND"] = "C", ["EX"] = "C>",
+    ["TERMINAL"] = "T",
+    -- ["SHELL"] = "$",
+    -- ["MORE"] = "M",
+    -- ["CONFIRM"] = "?",
+  }
+  local mode_map = require("lualine.utils.mode").map
+  for k, v in pairs(mode_map) do
+    local r = trans_map[v]
+    if r then
+      mode_map[k] = r
+    end
+  end
+  -- See: lualine/highlight.lua: get_mode_suffix()
+  local mode_to_highlight = {
+    ["I"] = "_insert",
+    ["V"] = "_visual", ["V="] = "_visual", ["V#"] = "_visual",
+    ["S"] = "_visual", ["S="] = "_visual", ["S#"] = "_visual",
+    ["R"] = "_replace", ["R*"] = "_replace",
+    ["C"] = "_command", ["C>"] = "_command",
+    ["T"] = "_terminal",
+    ["MORE"] = "_command", ["CONFIRM"] = "_command",
+  }
+  local highlight = require("lualine.highlight")
+  function highlight.get_mode_suffix()
+    return mode_to_highlight[mode_map[vim.api.nvim_get_mode().mode]] or "_normal"
+  end
+end
 
 --- records and backups ---
 vim_o.history = 64
