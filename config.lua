@@ -327,9 +327,38 @@ package.loaded["luasnip.util.log"] = setmetatable({}, {
 })
 
 --- completion ---
-usepkg.when({ au = "UIEnter" }, "cmp", false, function(_, mod)
-  local mapping = mod.mapping
-  mod.setup{
+usepkg.when({ au = "UIEnter" }, "cmp", false, function(_, cmp)
+  local mapping = cmp.mapping
+  -- Constants.
+  local cmp_kind_icon_map = {
+    Text = "",
+    Method = "",
+    Function = "󰡱",
+    Constructor = "",
+    Field = "",
+    Variable = "",
+    Class = "",
+    Interface = "",
+    Module = "",
+    Property = "󰑭",
+    Unit = "",
+    Value = "󰎠",
+    Enum = "",
+    Keyword = "",
+    Snippet = "",
+    Color = "",
+    File = "",
+    Reference = "󰈇",
+    Folder = "",
+    EnumMember = "",
+    Constant = "",
+    Struct = "",
+    Event = "",
+    Operator = "",
+    TypeParameter = "",
+  }
+  -- Do setup.
+  cmp.setup{
     completion = {
       completeopt = "menu,menuone",
     },
@@ -341,19 +370,31 @@ usepkg.when({ au = "UIEnter" }, "cmp", false, function(_, mod)
     mapping = {
       ["<up>"] = mapping.select_prev_item(),
       ["<down>"] = mapping.select_next_item(),
+      ["<S-tab>"] = mapping.select_prev_item(),
+      ["<tab>"] = mapping.select_next_item(),
       ["<M-k>"] = mapping.select_prev_item(),
       ["<M-j>"] = mapping.select_next_item(),
       ["<M-K>"] = mapping.scroll_docs(-5),
       ["<M-J>"] = mapping.scroll_docs(5),
       ["<cr>"] = mapping.confirm(),
-      ["<tab>"] = mapping.complete_common_string(),
       ["<M-esc>"] = mapping.abort(),
+    },
+    formatting = {
+      format = function(_, vim_item)
+        vim_item.kind = cmp_kind_icon_map[vim_item.kind] or ""
+        return vim_item
+      end
     },
     sources = {
       { name = "nvim_lsp" },
       { name = "luasnip" },
     },
   }
+  -- Add parentheses for functions.
+  cmp.event:on(
+    "confirm_done",
+    require("nvim-autopairs.completion.cmp").on_confirm_done()
+  )
 end)
 
 -------------------------------------------------
