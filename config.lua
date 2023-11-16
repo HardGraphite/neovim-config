@@ -6,7 +6,7 @@ local vim_autocmd = vim.api.nvim_create_autocmd
 local util = require "jet.confutil"
 local usepkg = require "jet.usepkg"
 
-usepkg.now("plenary", false) -- required by neogit, telescope
+usepkg.add_path("plenary") -- required by neogit, telescope
 
 local use_icons = vim_g.neovide
 local mod = nil -- temporary module variable
@@ -185,11 +185,23 @@ usepkg.when({ au = "UIEnter" }, "telescope", {
       --sort_lastused = true,
       sort_mru = true,
     },
+    current_buffer_fuzzy_find = {
+      skip_empty_lines = true,
+    },
     find_files = {
       find_command = { "fd", "--type", "f", "--color", "never" }, -- telescope/builtin/__files.lua
     },
   },
-}, function()
+  extensions = {
+    fzf = {
+      -- fuzzy = true,
+      -- override_generic_sorter = true,
+      -- override_file_sorter = true,
+      -- case_mode = "smart_case",
+    },
+  },
+}, function(_, telescope)
+  -- key bindings
   local builtin = require("telescope.builtin")
   util.set_keys("n", {
     "<leader>" .. "f",
@@ -205,6 +217,9 @@ usepkg.when({ au = "UIEnter" }, "telescope", {
     l = builtin.loclist,
     j = builtin.jumplist,
   })
+  -- extensions
+  usepkg.add_path("fzf")
+  telescope.load_extension("fzf")
 end)
 
 --- the "flash.nvim" plugin ---
