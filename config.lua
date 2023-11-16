@@ -213,16 +213,18 @@ usepkg.when({ au = "UIEnter" }, "flash", {
     nohlsearch = true,
   },
   modes = {
+    search = { enabled = false },
     char = { enabled = false },
+    treesitter = {
+      label = { rainbow = { enabled = true } },
+    },
   },
   highlight = { backdrop = false },
   prompt = { enabled = false },
-}, function(_, mod)
-  util.set_keys({"n", "x", "o"}, {
-    ["?"] = mod.jump,
-    ["g?"] = mod.treesitter,
-  })
-  util.set_key("o", "r", mod.remote)
+}, function(_, flash)
+  util.set_key({"n", "x", "o"}, "?", flash.jump)
+  util.set_key({"x", "o"}, "o", flash.treesitter)
+  util.set_key("o", "r", flash.remote)
 end)
 
 -------------------------------------------------
