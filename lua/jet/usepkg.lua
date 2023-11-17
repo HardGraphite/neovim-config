@@ -249,6 +249,9 @@ end, {nargs = "?", bang = true})
 ---Add package directory into rtp.
 ---@param pkg string package name
 function M.add_path(pkg)
+  if pkg:sub(1, 4) == "jet." then -- NOTE: special prefix: "jet."
+    return
+  end
   local path = M.pkgdir .. '/' .. pkg
   vim.opt.rtp:append(path)
   return path
@@ -257,8 +260,8 @@ end
 ---Load package now.
 ---@param pkg string package name
 ---@param setup? boolean|table whether to call the setup function
----@return mod table the loaded module (the return value from `require()`)
----@return dir string the runtime path associated with this package
+---@return table mod the loaded module (the return value from `require()`)
+---@return string|nil dir the runtime path associated with this package
 function M.now(pkg, setup)
   -- Load the module.
   local dir = M.add_path(pkg)
@@ -311,10 +314,12 @@ M._deferred = {
       if conf[2] then
         conf[2](pkg, mod) -- execute callback
       end
-      local files = vim.fn.glob(dir .. "/plugin/*.lua")
-      if files ~= "" then
-        for _, x in ipairs(vim.fn.split(files, "\n")) do
-          dofile(x) -- source plugin files
+      if dir then
+        local files = vim.fn.glob(dir .. "/plugin/*.lua")
+        if files ~= "" then
+          for _, x in ipairs(vim.fn.split(files, "\n")) do
+            dofile(x) -- source plugin files
+          end
         end
       end
       ::continue::

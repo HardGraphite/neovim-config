@@ -443,3 +443,7 @@ usepkg.when({ au = "UIEnter" }, "gitsigns", {
   update_debounce = 600,
   max_file_length = 10000,
 })
+
+--- input method ---
+usepkg.when({ cmd = "IM" }, "jet.exim")
+util.set_key("i", "<f9>", "<cmd>IM<cr>")
