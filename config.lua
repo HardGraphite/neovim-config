@@ -203,11 +203,12 @@ usepkg.when({ au = "UIEnter" }, "telescope", {
 }, function(_, telescope)
   -- key bindings
   local builtin = require("telescope.builtin")
+  local root_dir = require("jet.project").root_dir
   util.set_keys("n", {
     "<leader>" .. "f",
-    f = builtin.find_files,
+    f = function() builtin.find_files{cwd = root_dir()} end,
     F = builtin.oldfiles,
-    g = builtin.live_grep,
+    g = function() builtin.live_grep{cwd = root_dir()} end,
     s = builtin.current_buffer_fuzzy_find,
     b = builtin.buffers,
     m = builtin.marks,
@@ -281,6 +282,13 @@ usepkg.now("todo-comments", {
   },
 })
 
+--- project management ---
+usepkg.now("jet.project", {
+  project_types = {
+    "git_project",
+  },
+})
+
 --- tree-sitter ---
 usepkg.now("nvim-treesitter", false)
 require("nvim-treesitter.configs").setup{
@@ -294,6 +302,10 @@ require("nvim-treesitter.configs").setup{
 vim.lsp.set_log_level("OFF") -- disable LSP logging
 mod = usepkg.now("lspconfig", false)
 tmp = {
+  root_dir = function(filepath, bufnr)
+    return require("jet.project").root_dir(bufnr) or
+      require("lspconfig.util").find_git_ancestor(filepath)
+  end,
   on_attach = function(_, bufnr)
     local vim_lsp_buf = vim.lsp.buf
     local util_set_keys = require("jet.confutil").set_keys
