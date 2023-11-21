@@ -340,6 +340,19 @@ function M.setup(opts)
   end
 end
 
+--- List known projects.
+---@return string[]
+function M.list()
+  return vim.tbl_keys(_proj_list)
+end
+
+--- Remove a known project
+---@param proj string
+---@return boolean
+function M.delete(proj)
+  return del_proj(proj)
+end
+
 --- Get project root directory of the buffer.
 ---@param buf? integer
 ---@return string|nil dir

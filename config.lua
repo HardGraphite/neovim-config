@@ -199,6 +199,19 @@ usepkg.when({ au = "UIEnter" }, "telescope", {
       -- override_file_sorter = true,
       -- case_mode = "smart_case",
     },
+    jet_project = {
+      mappings = {
+        n = {
+          f = "find_files",
+          g = "live_grep",
+          D = "delete",
+        },
+        i = {
+          ["<cr>f"] = "find_files",
+          ["<cr>g"] = "live_grep",
+        },
+      },
+    },
   },
 }, function(_, telescope)
   -- key bindings
@@ -217,10 +230,12 @@ usepkg.when({ au = "UIEnter" }, "telescope", {
     Q = builtin.quickfixhistory,
     l = builtin.loclist,
     j = builtin.jumplist,
+    p = telescope.extensions.jet_project.project,
   })
   -- extensions
   usepkg.add_path("fzf")
-  telescope.load_extension("fzf")
+  telescope.load_extension("fzf") -- telescope-fzf-native.nvim
+  telescope.load_extension("jet_project") -- jet.project
 end)
 
 --- the "flash.nvim" plugin ---
