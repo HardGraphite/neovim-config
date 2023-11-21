@@ -182,8 +182,8 @@ usepkg.when({ au = "UIEnter" }, "telescope", {
   },
   pickers = {
     buffers = {
-      --sort_lastused = true,
-      sort_mru = true,
+      sort_lastused = true,
+      --sort_mru = true,
     },
     current_buffer_fuzzy_find = {
       skip_empty_lines = true,
