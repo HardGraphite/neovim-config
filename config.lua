@@ -107,6 +107,8 @@ vim_o.backup = false
 vim_o.undofile = false
 vim_o.swapfile = false
 vim_o.shadafile = vim.fn.stdpath("run") .. "/nvim.shada" -- temporary shada file
+vim_o.autoread = false
+vim_autocmd("FocusGained", { command = "checktime" })
 
 --- file formats ---
 vim_o.fileformats = "unix"
