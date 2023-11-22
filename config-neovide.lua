@@ -15,7 +15,7 @@ local vim_o = vim.o
 local usepkg = require "jet.usepkg"
 
 --- font ---
-vim_o.guifont = "JetBrainsMono Nerd Font:mono:Symbols Nerd Font Mono:h15"
+vim_o.guifont = "JetBrainsMono NF:mono:Symbols Nerd Font Mono:h15"
 
 --- title ---
 vim_o.title = true
