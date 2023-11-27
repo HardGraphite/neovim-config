@@ -2,7 +2,8 @@
 
 local vim_g = vim.g
 local vim_o = vim.o
-local vim_autocmd = vim.api.nvim_create_autocmd
+local vim_au = vim.api.nvim_create_autocmd
+local vim_fn = vim.fn
 local util = require "jet.confutil"
 local usepkg = require "jet.usepkg"
 
@@ -34,7 +35,7 @@ usepkg.now("nvim-web-devicons")
 vim_o.number = true
 vim_o.relativenumber = true
 
---- marks and rulers ---
+--- marks, signs and rulers ---
 vim_o.hlsearch = true
 vim_o.cursorline = true
 vim_o.colorcolumn = "80" -- must be a string!
@@ -43,6 +44,12 @@ vim_o.listchars = "tab:▸ ,trail:·"
 vim_o.showcmd = false
 vim_o.showmode = false
 usepkg.when({ au = "UIEnter" }, "ibl") -- indent guide
+vim_fn.sign_define{ -- sign icons
+  { name = "DiagnosticSignError",texthl = "DiagnosticError",text = "󰅚" },
+  { name = "DiagnosticSignWarn", texthl = "DiagnosticWarn", text = "󰀪" },
+  { name = "DiagnosticSignInfo", texthl = "DiagnosticInfo", text = "󰋽" },
+  { name = "DiagnosticSignHint", texthl = "DiagnosticHint", text = "󰌶" },
+}
 
 --- status line ---
 usepkg.now("lualine", {
@@ -101,14 +108,28 @@ do
   end
 end
 
+--- diagnostics ---
+vim.diagnostic.config{
+  virtual_text = {
+    spacing = 1,
+    prefix = "▍",
+  },
+  float = {
+    severity_sort = false,
+    source = "if_many",
+  },
+  -- update_in_insert = true, -- TODO: enable updates in insert, but with delay after idle
+  severity_sort = true,
+}
+
 --- records and backups ---
 vim_o.history = 64
 vim_o.backup = false
 vim_o.undofile = false
 vim_o.swapfile = false
-vim_o.shadafile = vim.fn.stdpath("run") .. "/nvim.shada" -- temporary shada file
+vim_o.shadafile = vim_fn.stdpath("run") .. "/nvim.shada" -- temporary shada file
 vim_o.autoread = false
-vim_autocmd("FocusGained", { command = "checktime" })
+vim_au("FocusGained", { command = "checktime" })
 
 --- file formats ---
 vim_o.fileformats = "unix"
@@ -132,7 +153,7 @@ vim_o.smartcase = true
 vim_o.ignorecase = true
 
 --- options for specific options ---
-vim_autocmd("TermOpen", {
+vim_au("TermOpen", {
   callback = function()
     local vim_wo = vim.wo
     vim_wo.number = false
