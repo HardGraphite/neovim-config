@@ -366,6 +366,7 @@ for _, x in ipairs{
   "cmake", -- CMake
   "lua_ls", -- Lua
   "texlab", -- LaTeX
+  "jdtls", -- Java
 } do
   mod[x].setup(tmp)
 end
