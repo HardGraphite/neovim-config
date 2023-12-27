@@ -28,7 +28,7 @@ vim_g.neovide_remember_window_position = false
 
 --- scroll animations ---
 vim_g.neovide_scroll_animation_length = 0.2
-vim_g.neovide_scroll_animation_far_lines = 3
+vim_g.neovide_scroll_animation_far_lines = 10
 
 --- cursor animations ---
 vim_g.neovide_cursor_animation_length = 0.03
@@ -46,4 +46,4 @@ vim_o.winblend = 30
 usepkg.options("telescope", { defaults = { winblend = 40 } })
 
 --- floating window: shadow ---
--- TODO: https://neovide.dev/configuration.html#floating-shadow
+vim_g.neovide_floating_z_height = 6
